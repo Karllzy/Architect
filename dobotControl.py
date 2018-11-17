@@ -5,7 +5,7 @@ import numpy
 """##############################
 用于机械臂的控制
 修改人：李振业, 宁南鑫
-最后修改日期：2018/11/17 8:44
+最后修改日期：2018/11/17 18:22
 ##############################"""
 
 
@@ -75,7 +75,7 @@ class Architect:
             return x, y
         return False
 
-    def build_layer(self, layer, height):
+    def build_layer(self, layer):
         """
         construct a standard floor
         :param layer:all the bricks' information
@@ -91,14 +91,33 @@ class Architect:
                 theta_2 = numpy.arctan(brick[0] / brick[1])
                 R = theta_2 - theta_1
 
-                x_1 = brick[0]
-                y_1 = brick[1]
-                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                x_1, y_1, height + 20, rHead=R, isQueued=1)
-                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                x_1, y_1, height, rHead=R, isQueued=1)
-                dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
-                self.raise_up()
+                if brick_kind != '短' or brick_kind != '厚':
+                    if brick[-1] == 0:
+                        x_1 = brick[0] * 30
+                        y_1 = brick[1] * 30 - 15
+                        dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                        x_1, y_1, self.height + 20, rHead=R, isQueued=1)
+                        dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                        x_1, y_1, self.height, rHead=R, isQueued=1)
+                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
+                        self.raise_up()
+                    else:
+                        x_1 = brick[0] * 30 - 15
+                        y_1 = brick[1] * 30
+                        dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                        x_1, y_1, self.height + 20, rHead=R, isQueued=1)
+                        dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                        x_1, y_1, self.height, rHead=R, isQueued=1)
+                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
+
+                else:
+                    x_1 = brick[0] * 30 - 15
+                    y_1 = brick[1] * 30 - 15
+                    dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                    x_1, y_1, self.height + 20, rHead=R, isQueued=1)
+                    dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
+                                    x_1, y_1, self.height, rHead=R, isQueued=1)
+                    dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
                 return False
             else:
                 return brick
@@ -109,7 +128,7 @@ class Architect:
         :return:
         """
         current_pose = dType.GetPose(self.api)
-        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+        dType.SetPTPCmd(self.api, dType.PTPMode.PTPMOVJXYZMode,
                         current_pose[0], current_pose[1], current_pose[2] + height, rHead=0, isQueued=1)
 
     def build(self, model):
@@ -120,11 +139,17 @@ class Architect:
         """
         height = self.height
         for layer in model:
-            break_point = self.build_layer(layer, height)
+            break_point = self.build_layer(layer)
             if break_point:
                 return break_point
             height += 20
         return False
+
+if __name__  == '__main__':
+    A = Architect()
+    A.connect_and_home()
+    A.raise_up()
+
 
 
 
