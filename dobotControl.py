@@ -1,8 +1,5 @@
 import DobotDllType as dType
-import DobotDllType as dType
-import math
 import mm
-import pickle
 import numpy
 
 """##############################
@@ -16,6 +13,7 @@ class Architect:
     """
         用于控制机械臂进行搭建的类
     """
+
     def __init__(self, height=20, origin=(245, 150, -20)):
         """
         Initialization
@@ -34,19 +32,18 @@ class Architect:
             dType.DobotCommunicate.DobotCommunicate_NoError: "No_Error",
             dType.DobotCommunicate.DobotCommunicate_BufferFull: "Buffer_Full",
             dType.DobotCommunicate.DobotCommunicate_Timeout: "Time_Out"}  # Command excution status dictionary
-        self.mm  = mm.Manger()
+        self.mm = mm.Manger()
 
     def connect_and_home(self):
         """
         connect and return to zero
-        :return: 
+        :return:
         """
         # Communicate at 115200 baud rate and print communication status
         state = dType.ConnectDobot(self.api, "", 115200)[0]
         print("Connect status:", self.CON_STATE[state])
 
         if (state == dType.DobotConnect.DobotConnect_NoError):
-
             # Clear tasks from old queues
             dType.SetQueuedCmdClear(self.api)
 
@@ -75,71 +72,59 @@ class Architect:
             dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode, x, y, z, rHead=0, isQueued=1)
             dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=1, isQueued=1)
             self.raise_up()
-            return (x, y, z)
+            return x, y
         return False
 
-    def build_layer(self, layer): # layer： all the bricks' information
+    def build_layer(self, layer, height):
         """
-        To construct a standard floor
-        :param layer:  
-        :return: 
+        construct a standard floor
+        :param layer:all the bricks' information
+        :return:the position of break point if failed /False
         """
-
         for brick in layer:
-            # get the needed brick
             brick_kind = brick[2]
             if self.get_brick(brick_kind):
                 # put the brick to the required place
                 x = self.get_brick(brick_kind)[0]
                 y = self.get_brick(brick_kind)[1]
-                theta_1 = numpy.arctan(y/x)
-                theta_2 = numpy.arctan(brick[0]/brick[1])
+                theta_1 = numpy.arctan(y / x)
+                theta_2 = numpy.arctan(brick[0] / brick[1])
                 R = theta_2 - theta_1
-                # how to place the long brick
-                if brick_kind  != '短' or brick_kind != '厚':
-                    if brick[-1] == 0:
-                        x_1 = brick[0] * 30
-                        y_1 = brick[1] * 30 - 15
-                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                x_1, y_1, self.height+20, rHead=R, isQueued=1)
-                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                x_1, y_1, self.height, rHead=R,isQueued=1)
-                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
-                        self.raise_up()
-                    else:
-                        x_1 = brick[0] * 30 - 15
-                        y_1 = brick[1] * 30
-                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                        x_1, y_1, self.height + 20, rHead=R, isQueued=1)
-                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                                        x_1, y_1, self.height, rHead=R, isQueued=1)
-                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
+
+                x_1 = brick[0]
+                y_1 = brick[1]
+                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                                x_1, y_1, height + 20, rHead=R, isQueued=1)
+                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                                x_1, y_1, height, rHead=R, isQueued=1)
+                dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
+                self.raise_up()
                 return False
             else:
                 return brick
 
-    def raise_up(self):
+    def raise_up(self, height=20):
         """
         rasie up the machine
-        :return: 
+        :return:
         """
         current_pose = dType.GetPose(self.api)
         dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
-                        current_pose[0], current_pose[1], current_pose[2] + 20, rHead=0, isQueued=1)
+                        current_pose[0], current_pose[1], current_pose[2] + height, rHead=0, isQueued=1)
 
     def build(self, model):
         """
         construct a model
         :param model: layer dictionary
-        :return: 
+        :return:
         """
+        height = self.height
         for layer in model:
-            self.build_layer(layer)
-            self.height += 20
-
-
-
-
+            break_point = self.build_layer(layer, height)
+            if break_point:
+                return break_point
+            height += 20
+        return False
 
 
 
