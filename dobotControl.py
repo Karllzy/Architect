@@ -1,4 +1,5 @@
 import DobotDllType as dType
+import DobotDllType as dType
 import math
 import mm
 import pickle
@@ -94,15 +95,25 @@ class Architect:
                 theta_1 = numpy.arctan(y/x)
                 theta_2 = numpy.arctan(brick[0]/brick[1])
                 R = theta_2 - theta_1
-                if brick[-1] = ''
-                x_1 = brick[0]
-                y_1 = brick[1]
-                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                # how to place the long brick
+                if brick_kind  != '短' or brick_kind != '厚':
+                    if brick[-1] == 0:
+                        x_1 = brick[0] * 30
+                        y_1 = brick[1] * 30 - 15
+                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
                                 x_1, y_1, self.height+20, rHead=R, isQueued=1)
-                dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
                                 x_1, y_1, self.height, rHead=R,isQueued=1)
-                dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
-                self.raise_up()
+                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
+                        self.raise_up()
+                    else:
+                        x_1 = brick[0] * 30 - 15
+                        y_1 = brick[1] * 30
+                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                                        x_1, y_1, self.height + 20, rHead=R, isQueued=1)
+                        dType.SetPTPCmd(self.api, dType.PTPMode.MOVJXYZMode,
+                                        x_1, y_1, self.height, rHead=R, isQueued=1)
+                        dType.SetEndEffectorSuctionCup(self.api, enableCtrl=1, on=0, isQueued=1)
                 return False
             else:
                 return brick
@@ -125,6 +136,7 @@ class Architect:
         for layer in model:
             self.build_layer(layer)
             self.height += 20
+
 
 
 
